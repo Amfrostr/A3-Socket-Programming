@@ -1,13 +1,22 @@
 package no.ntnu.datakomm;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.Socket;
+import java.nio.Buffer;
+import java.nio.charset.StandardCharsets;
+
 /**
  * A Simple TCP client, used as a warm-up exercise for assignment A4.
  */
 public class SimpleTcpClient {
     // Remote host where the server will be running
-    private static final String HOST = "localhost";
+    private static final String HOST = "datakomm.work";
     // TCP port
     private static final int PORT = 1301;
+    // Socket
+    private Socket outputSocket;
 
     /**
      * Run the TCP Client.
@@ -18,7 +27,7 @@ public class SimpleTcpClient {
         SimpleTcpClient client = new SimpleTcpClient();
         try {
             client.run();
-        } catch (InterruptedException e) {
+        } catch (InterruptedException | IOException e) {
             log("Client interrupted");
             Thread.currentThread().interrupt();
         }
@@ -31,7 +40,7 @@ public class SimpleTcpClient {
      * @throws InterruptedException The method sleeps to simulate long client-server conversation.
      *                              This exception is thrown if the execution is interrupted halfway.
      */
-    public void run() throws InterruptedException {
+    public void run() throws InterruptedException, IOException {
         log("Simple TCP client started");
 
         if (!connectToServer(HOST, PORT)) {
@@ -42,7 +51,7 @@ public class SimpleTcpClient {
 
         int a = (int) (1 + Math.random() * 10);
         int b = (int) (1 + Math.random() * 10);
-        String request = a + "+" + b;
+        String request = a + "+" + b + "\n";
 
         if (!sendRequestToServer(request)) {
             log("ERROR: Failed to send valid message to server!");
@@ -72,7 +81,7 @@ public class SimpleTcpClient {
         }
         log("Server responded with: " + response);
 
-        if (!sendRequestToServer("game over") || !closeConnection()) {
+        if (!sendRequestToServer("game over\n") || !closeConnection()) {
             log("ERROR: Failed to stop conversation");
             return;
         }
@@ -110,8 +119,16 @@ public class SimpleTcpClient {
      */
     private boolean connectToServer(String host, int port) {
         // TODO - implement this method
-        // Remember to catch all possible exceptions that the Socket class can throw.
-        return false;
+        try {
+            this.outputSocket = new Socket(HOST, PORT);
+
+            OutputStream output = this.outputSocket.getOutputStream();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+        return true;
     }
 
     /**
@@ -120,9 +137,13 @@ public class SimpleTcpClient {
      * @return True on success, false otherwise. Note: if the connection was already closed (not established),
      * return true as well.
      */
-    private boolean closeConnection() {
-        // TODO - implement this method
-        return false;
+    private boolean closeConnection() throws IOException {
+        if(!outputSocket.isClosed()) {
+            outputSocket.close();
+            return true;
+        } else {
+            return false;
+        }
     }
 
 
@@ -132,9 +153,20 @@ public class SimpleTcpClient {
      * @param request The request message to send. Do NOT include the newline in the message!
      * @return True when message successfully sent, false on error.
      */
-    private boolean sendRequestToServer(String request) {
+    private boolean sendRequestToServer(String request) throws IOException {
         // TODO - implement this method
         // Hint: you should check if the connection is open
+        if(!outputSocket.isClosed()) {
+            OutputStream outputStream = outputSocket.getOutputStream();
+            outputStream.write(request.getBytes(StandardCharsets.UTF_8));
+
+            if(request.equalsIgnoreCase("game over\n")) {
+
+            closeConnection();
+            }
+
+            return true;
+        }
         return false;
     }
 
@@ -144,9 +176,19 @@ public class SimpleTcpClient {
      * @return The response received from the server, null on error. The newline character is stripped away
      * (not included in the returned value).
      */
-    private String readResponseFromServer() {
+    private String readResponseFromServer() throws IOException {
         // TODO - implement this method
-        // Hint: you should check if the connection is open
+        if (!outputSocket.isClosed()) {
+            InputStream inputStream = outputSocket.getInputStream();
+            byte[] buffer = new byte[10000];
+            int bytesReceived = inputStream.read(buffer);
+
+            String responsePart = new String(buffer);
+            if (bytesReceived > 0) {
+                System.out.println("Received " + bytesReceived + "\n" + responsePart);
+                return responsePart;
+            }
+        }
         return null;
     }
 

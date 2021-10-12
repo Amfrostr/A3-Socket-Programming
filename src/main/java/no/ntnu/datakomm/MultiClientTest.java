@@ -1,5 +1,7 @@
 package no.ntnu.datakomm;
 
+import java.io.IOException;
+
 /**
  * A class used to test whether the server can handle multiple TCP client simultaneously (a multi-threaded server)
  */
@@ -30,7 +32,7 @@ public class MultiClientTest {
                     log("Starting a client on thread #" + threadId);
                     client.run();
                     log("Done processing client on thread #" + threadId);
-                } catch (InterruptedException e) {
+                } catch (InterruptedException | IOException e) {
                     log("Client 1 interrupted");
                     Thread.currentThread().interrupt();
                 }
