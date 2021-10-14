@@ -6,6 +6,7 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.Buffer;
 import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 
 /**
  * A Simple TCP client, used as a warm-up exercise for assignment A4.
@@ -67,7 +68,7 @@ public class SimpleTcpClient {
         log("Server responded with: " + response);
 
         sleepRandomTime();
-        request = "bla+bla";
+        request = "bla+bla" + "\n";
         if (!sendRequestToServer(request)) {
             log("ERROR: Failed to send invalid message to server!");
             return;
@@ -81,10 +82,12 @@ public class SimpleTcpClient {
         }
         log("Server responded with: " + response);
 
+
         if (!sendRequestToServer("game over\n") || !closeConnection()) {
             log("ERROR: Failed to stop conversation");
             return;
         }
+
         log("Game over, connection closed");
 
         // When the connection is closed, try to send one more message. It should fail.
@@ -141,9 +144,12 @@ public class SimpleTcpClient {
         if(!outputSocket.isClosed()) {
             outputSocket.close();
             return true;
-        } else {
-            return false;
+        } else if (outputSocket.isClosed()) {
+            log("outputSocket is already closed. Moving on.");
+            return true;
         }
+        else
+            return false;
     }
 
 
@@ -159,7 +165,6 @@ public class SimpleTcpClient {
         if(!outputSocket.isClosed()) {
             OutputStream outputStream = outputSocket.getOutputStream();
             outputStream.write(request.getBytes(StandardCharsets.UTF_8));
-
             if(request.equalsIgnoreCase("game over\n")) {
 
             closeConnection();
